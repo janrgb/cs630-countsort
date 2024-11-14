@@ -2,16 +2,39 @@ import multiprocessing
 import random
 import time
 
-def CountSortRegular():
-    # TODO: implement CountSortRegular
 
+def CountThreadFunc(in_list, cnt_dict):
+    # TODO: implement CountThreadFunc
+    pass
+
+def CountSortThreaded(in_list, cnt_dict, out_list, minimum, maximum):
+    # TODO: implement CountSortThreaded
+    pass
+
+def CountSortRegular(in_list, cnt_dict, out_list, minimum, maximum):
+    # Loop through array looking for each value and place how many times that value appears -> countArray's position for that element
+    for elem in in_list:
+        cnt_dict[elem] = cnt_dict[elem] + 1
+
+    # Prefix sum.
+    for j in range(minimum + 1, maximum + 1, 1):
+        cnt_dict[j] = cnt_dict[j - 1] + cnt_dict[j]
+
+    # Iterate backwards from in_list and capture each member to place in out_list
+    for j in range(len(in_list) - 1, -1, -1):
+        out_list[cnt_dict[in_list[j]] - 1] = in_list[j]
+        cnt_dict[in_list[j]] = cnt_dict[in_list[j]] - 1
+
+''' Print list.
+    for elem in out_list:
+        print(f"{elem} ")
+'''
 if __name__ == '__main__':
     # Set the seed.
     random.seed(42)
     print(random.randint(1, 100))
 
     # Init local vars.
-    maximum = 0
     max_cores = multiprocessing.cpu_count() - 1
 
     # Ask the user for the number of threads/cores.
@@ -76,13 +99,20 @@ if __name__ == '__main__':
     count_dict = {}
     count_dict_th = {}
     for i in range(0, no_elements, 1):
-        input_list[i] = (random.randrange(min, max + 1))
-        el = input_list[i]
-        if (el > maximum):
-            count_dict[maximum] = 0
-            count_dict_th[maximum] = 0
+        input_list.append((random.randrange(min, max + 1)))
+        output_list.append(0)
+
+    for i in range(min, max + 1, 1):
+        count_dict[i] = 0
+        count_dict_th[i] = 0
 
     start = time.time()
-    CountSortRegular(input_list, count_dict, output_list)
+    CountSortRegular(input_list, count_dict, output_list, min, max)
     end = time.time()
-    print("Time taken for regular countsort: %f\n", (end - start))
+    print(f"Time taken for regular countsort: {(end - start)}")
+
+    # Build thread arguments and call threads.
+    start = time.time()
+    CountSortThreaded(input_list, count_dict_th, output_list_th, min, max)
+    end = time.time()
+    print(f"Time taken for threaded countsort: {(end - start)}")
