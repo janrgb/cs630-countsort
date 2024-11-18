@@ -1,18 +1,73 @@
 import multiprocessing
 import random
 import time
+import numpy
+import math
 
+def CountThreadFunc(chunk, max_value):
+    local_count = numpy.zeros(max_value + 1, dtype=int)
+    for num in chunk:
+        local_count[num] += 1
+    return local_count
 
-def CountThreadFunc(in_list, cnt_dict):
-    # TODO: implement CountThreadFunc
-    pass
+# This code was made possible by Harshita Gupta!
+def CountSortThreaded(in_list, procs):
+    # Step 1: find the maximum value in the array.
+    max_value = max(in_list)
 
-def CountSortThreaded(in_list, cnt_dict, out_list, minimum, maximum):
-    # TODO: implement CountSortThreaded
-    pass
+    # Step 2: Split the array into chunks for each process.
+    chunk_size = math.ceil(len(in_list) // procs)            # Round up to let the last process consume any leftovers
+    chunks = []
+    for i in range(procs):
+        start = i * chunk_size
+        end = (i + 1) * chunk_size
+        chunk = in_list[start:end]
+        chunks.append(chunk)
+    
+    # Step 3: Create a multiprocessing pool and pass arguments.
+    with multiprocessing.Pool(processes=procs) as pool:
+        #parallel counting
+        partial_counts = pool.starmap(CountThreadFunc, [(chunk, max_value) for chunk in chunks])
 
-def CountSortRegular(in_list, cnt_dict, out_list, minimum, maximum):
+    # Step 4: Aggregate the counts from every process.
+    total_count = numpy.zeros(max_value + 1, dtype=int)
+    for count in partial_counts:
+        total_count += count
+
+    # Step 5: Construct a sorted array from the total counts.
+    sorted_array = []
+    for num, count in enumerate(total_count):
+        sorted_array.extend([num] * count)
+
+    return sorted_array
+
+# This code was made possible by Janhavi Tatkare!
+def CountSortRegular(in_list):
+    # Step 1: find the maximum value in the array.
+    max_val = max(in_list)
+
+    # Step 2: initialize the count array.
+    count_list = [0] * (max_val + 1)
+
+    # Step 3: Count occurrences of each element.
+    for num in in_list:
+        count_list[num] += 1
+
+    # Step 4: Accumulate the counts.
+    for i in range(1, len(count_list)):
+        count_list[i] += count_list[i - 1]
+
+    # Step 5: Place elements into the sorted array.
+    output_list = [0] * len(in_list)
+    for num in reversed(in_list):           # To make it a stable sort, iterate in reverse.
+        output_list[count_list[num] - 1] = num
+        count_list[num] -= 1
+
+    return output_list
+    
+    
     # Loop through array looking for each value and place how many times that value appears -> countArray's position for that element
+    '''
     for elem in in_list:
         cnt_dict[elem] = cnt_dict[elem] + 1
 
@@ -24,16 +79,18 @@ def CountSortRegular(in_list, cnt_dict, out_list, minimum, maximum):
     for j in range(len(in_list) - 1, -1, -1):
         out_list[cnt_dict[in_list[j]] - 1] = in_list[j]
         cnt_dict[in_list[j]] = cnt_dict[in_list[j]] - 1
-
+    '''
 ''' Print list.
     for elem in out_list:
         print(f"{elem} ")
 '''
-if __name__ == '__main__':
-    # Set the seed.
-    random.seed(42)
-    print(random.randint(1, 100))
 
+def identityCheck(arr1, arr2):
+    if (arr1 == arr2):
+        return 0
+    return 1
+
+def getUserInput():
     # Init local vars.
     max_cores = multiprocessing.cpu_count() - 1
 
@@ -91,28 +148,61 @@ if __name__ == '__main__':
             print("Error! That wasn't a number. Please enter a valid number.")
     print(f"The program will generate {no_elements} elements between {min} and {max}, inclusive.")
 
-    # Make an input/output array and count dictionary based on min + max.
+    # Make an input array based on min and max.
     input_list = []
-    output_list = []
-    output_list_th = []
 
-    count_dict = {}
-    count_dict_th = {}
-    for i in range(0, no_elements, 1):
+    for _ in range(0, no_elements, 1):
         input_list.append((random.randrange(min, max + 1)))
-        output_list.append(0)
 
-    for i in range(min, max + 1, 1):
-        count_dict[i] = 0
-        count_dict_th[i] = 0
+    return input_list, no_threads
 
-    start = time.time()
-    CountSortRegular(input_list, count_dict, output_list, min, max)
-    end = time.time()
-    print(f"Time taken for regular countsort: {(end - start)}")
+if __name__ == '__main__':
+    while True:
+        # Set the seed.
+        random.seed(42)
+        # print(random.randint(1, 100))
 
-    # Build thread arguments and call threads.
-    start = time.time()
-    CountSortThreaded(input_list, count_dict_th, output_list_th, min, max)
-    end = time.time()
-    print(f"Time taken for threaded countsort: {(end - start)}")
+        # Introduction.
+        print("Welcome to the Regular VS. Parallel Counting Sort Program!")
+        print("Enter exit to quit the program or press enter")
+        exit_input=input("Do you want to quit or continue?").strip()
+        if exit_input.lower()=="exit":
+            print("Thanks for coming!\n")
+            break
+
+        # Get user input.
+        list_and_threads = getUserInput()
+        returned_list = list_and_threads[0]
+        num_threads = list_and_threads[1]
+
+        if len (returned_list) == 0:
+            print("Empty array, nothing to sort.")
+            print("\nRUNNING AGAIN...\n")
+            continue
+
+        start_time = time.time()
+        output1 = CountSortRegular(returned_list)
+        end_time = time.time()
+
+        print("\n==========REGULAR COUNTSORT==========\n")
+
+        # print("ORIGINAL ARRAY: ", returned_list)
+        # print("SORTED ARRAY: ", output)
+        print(f"Time taken for regular countsort: {(end_time - start_time)}")
+
+        print("\n==========THREADED COUNTSORT==========\n")
+
+        # Build thread arguments and call threads.
+        start_time = time.time()
+        output2 = CountSortThreaded(returned_list, num_threads)
+        end_time = time.time()
+        # print("ORIGINAL ARRAY: ", returned_list)
+        # print("SORTED ARRAY: ", output)
+        print(f"Time taken for threaded countsort: {(end_time - start_time)}")
+
+        if (identityCheck(output1, output2) == 0):
+            print("The arrays are identical!")
+        else:
+            print("ERROR! The arrays are not identical! Something's wrong!")
+
+        print("\nRUNNING AGAIN...\n")
