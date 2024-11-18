@@ -64,26 +64,6 @@ def CountSortRegular(in_list):
         count_list[num] -= 1
 
     return output_list
-    
-    
-    # Loop through array looking for each value and place how many times that value appears -> countArray's position for that element
-    '''
-    for elem in in_list:
-        cnt_dict[elem] = cnt_dict[elem] + 1
-
-    # Prefix sum.
-    for j in range(minimum + 1, maximum + 1, 1):
-        cnt_dict[j] = cnt_dict[j - 1] + cnt_dict[j]
-
-    # Iterate backwards from in_list and capture each member to place in out_list
-    for j in range(len(in_list) - 1, -1, -1):
-        out_list[cnt_dict[in_list[j]] - 1] = in_list[j]
-        cnt_dict[in_list[j]] = cnt_dict[in_list[j]] - 1
-    '''
-''' Print list.
-    for elem in out_list:
-        print(f"{elem} ")
-'''
 
 def identityCheck(arr1, arr2):
     if (arr1 == arr2):
