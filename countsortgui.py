@@ -18,18 +18,13 @@ class CountSort:
         root.rowconfigure(0, weight=1)
 
         # Create the entry widgets.
-
         self.number_of_threads = StringVar()
         thread_entry = ttk.Entry(mainframe, width=10, textvariable=self.number_of_threads)
         thread_entry.grid(column=0, row=0, sticky=(N,W))
 
-        def update_label(event=None):
-            element_label['text'] = f"# of elements (minimum 20): {self.number_of_elements.get()}"
-
         self.number_of_elements = StringVar()
         element_entry = ttk.Entry(mainframe, width=10, textvariable=self.number_of_elements)
         element_entry.grid(column=1, row=0, sticky=(N,W))
-        element_entry.bind("<Return>", update_label)
 
         self.max_cores = multiprocessing.cpu_count() - 1
 
@@ -51,18 +46,64 @@ class CountSort:
         button = ttk.Button(mainframe, text="GENERATE", command=self.generate, style="Custom.TButton")
         button.grid(column=0, row=2, columnspan=2, sticky=(W, E))
 
+        # Create a separate frame to house the scrollbar and text area.
+        subframe = ttk.Frame(root, padding=10)
+        subframe.grid(row=0, column=2, rowspan=3, sticky=(N,W,E,S))
+        subframe.rowconfigure(0, weight=1)
+        subframe.columnconfigure(0, weight=1)
+
         # Create a text area for storing output.
-        text_area = Text(mainframe, height=10, width=100, wrap="word")
-        text_area.grid(row=0, column=2, rowspan=3, sticky="n")
-        text_area.insert('1.0', 'This is where you will see the generated and sorted array.')
-        text_area.configure(font=('Consolas', 10))
+        text_area = Text(subframe, width=100, height=10, wrap=WORD)
+        text_area.grid(row=0, column=0, sticky="nsew")
+        text_area.insert('1.0', 'This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.')
+        text_area.config(font=('Consolas', 10))
 
         # Create a Scrollbar widget
-        scrollbar = ttk.Scrollbar(mainframe, orient="vertical", command=text_area.yview)
-        scrollbar.grid(row=0, column=3, rowspan=3, sticky="ns")
+        scrollbar = Scrollbar(subframe, orient=VERTICAL, command=text_area.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        text_area.config(yscrollcommand=scrollbar.set)
         text_area['state'] = 'disabled'
 
+        # Create a separate frame for storing table/treeview content.
+        subframe_two = ttk.Frame(root, padding=10)
+        subframe_two.grid(row=4, column=0, columnspan=3, sticky=(N,W,E,S))
+        subframe_two.rowconfigure(0, weight=1)
+        subframe_two.columnconfigure(0, weight=1)
+
+        # Define columns for the table.
+        columns = ("Threads", "Elements", "Time (Regular)", "Time (Threaded)")
+
+        # Create Treeview.
+        tree = ttk.Treeview(subframe_two, columns=columns, show="headings")
+
+        # Define headings in column config.
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, anchor=CENTER, width=100)
+        
+        # Add sample data to the table.
+        '''data = [
+            (1, "Alice", 30, "HR")
+        ] * 10
+
+        for _ in range(10):
+            data.append((2, "Bran", 40, "Corp"))
+        
+        for row in data:
+            tree.insert("", END, values=row)'''
+
+        # Add TreeView widgets to frame
+        tree.grid(row=0, column=0, sticky="nsew")
+
+        # Add a vertical scrollbar.
+        v_scroll = ttk.Scrollbar(subframe_two, orient=VERTICAL, command=tree.yview)
+        v_scroll.grid(row=0, column=1, sticky="ns")
+        tree.configure(yscrollcommand=v_scroll.set)
+
         for child in mainframe.winfo_children():
+            child.grid_configure(padx=5, pady=5)
+        
+        for child in subframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
         thread_entry.focus()
@@ -134,7 +175,7 @@ class CountSort:
             return 0
         return 1
 
-    def getUserInput(self):
+    def testUserInput(self):
         # Init local vars.
         max_cores = multiprocessing.cpu_count() - 1
 
@@ -201,55 +242,69 @@ class CountSort:
         return input_list, no_threads
 
     def generate(self):
-        while True:
-            # Set the seed.
-            random.seed(42)
-            # print(random.randint(1, 100))
+        # The first thing we have to do is TEST OUR INPUTS. If our inputs are bad, we SHOULD NOT CONTINUE.
+        if (self.testUserInput()):
+            # TODO: error handling
+            return
+        
+        # Testing what vars we have access to...
+        print(self.number_of_elements.get())
+        print(self.number_of_elements.get())
+        print(self.max_cores)
+        # Set the seed.
+        random.seed(42)
+        # print(random.randint(1, 100))
 
-            # Introduction.
-            print("Welcome to the Regular VS. Parallel Counting Sort Program!")
-            print("Enter exit to quit the program or press enter")
-            exit_input=input("Do you want to quit or continue?").strip()
-            if exit_input.lower()=="exit":
-                print("Thanks for coming!\n")
-                break
+        # Introduction.
+        '''
+        print("Welcome to the Regular VS. Parallel Counting Sort Program!")
+        print("Enter exit to quit the program or press enter")
+        exit_input=input("Do you want to quit or continue?").strip()
+        if exit_input.lower()=="exit":
+            print("Thanks for coming!\n")
+            break
 
-            # Get user input.
-            list_and_threads = self.getUserInput()
-            returned_list = list_and_threads[0]
-            num_threads = list_and_threads[1]
+        # Get user input.
+        list_and_threads = self.getUserInput()
+        returned_list = list_and_threads[0]
+        num_threads = list_and_threads[1]
 
-            if len (returned_list) == 0:
-                print("Empty array, nothing to sort.")
-                print("\nRUNNING AGAIN...\n")
-                continue
-
-            start_time = time.time()
-            output1 = self.CountSortRegular(returned_list)
-            end_time = time.time()
-
-            print("\n==========REGULAR COUNTSORT==========\n")
-
-            # print("ORIGINAL ARRAY: ", returned_list)
-            # print("SORTED ARRAY: ", output)
-            print(f"Time taken for regular countsort: {(end_time - start_time)}")
-
-            print("\n==========THREADED COUNTSORT==========\n")
-
-            # Build thread arguments and call threads.
-            start_time = time.time()
-            output2 = self.CountSortThreaded(returned_list, num_threads)
-            end_time = time.time()
-            # print("ORIGINAL ARRAY: ", returned_list)
-            # print("SORTED ARRAY: ", output)
-            print(f"Time taken for threaded countsort: {(end_time - start_time)}")
-
-            if (self.identityCheck(output1, output2) == 0):
-                print("The arrays are identical!")
-            else:
-                print("ERROR! The arrays are not identical! Something's wrong!")
-
+        if len (returned_list) == 0:
+            print("Empty array, nothing to sort.")
             print("\nRUNNING AGAIN...\n")
+            continue
+        '''
+
+        '''
+        start_time = time.time()
+        output1 = self.CountSortRegular(returned_list)
+        end_time = time.time()
+
+        print("\n==========REGULAR COUNTSORT==========\n")
+
+        # print("ORIGINAL ARRAY: ", returned_list)
+        # print("SORTED ARRAY: ", output)
+        print(f"Time taken for regular countsort: {(end_time - start_time)}")
+
+        print("\n==========THREADED COUNTSORT==========\n")
+        '''
+
+        # Build thread arguments and call threads.
+        '''
+        start_time = time.time()
+        output2 = self.CountSortThreaded(returned_list, num_threads)
+        end_time = time.time()
+        print("ORIGINAL ARRAY: ", returned_list)
+        print("SORTED ARRAY: ", output)
+        print(f"Time taken for threaded countsort: {(end_time - start_time)}")
+
+        if (self.identityCheck(output1, output2) == 0):
+            print("The arrays are identical!")
+        else:
+            print("ERROR! The arrays are not identical! Something's wrong!")
+
+        print("\nRUNNING AGAIN...\n")
+        '''
 
 # Set up the window.
 root = Tk()
