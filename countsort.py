@@ -176,7 +176,7 @@ if __name__ == '__main__':
         start_time = time.time()
         output2 = CountSortThreaded(returned_list, num_threads)
         end_time = time.time()
-        print(output2)
+        # print(output2)
         # print("ORIGINAL ARRAY: ", returned_list)
         # print("SORTED ARRAY: ", output)
         print(f"Time taken for threaded countsort: {(end_time - start_time)}")

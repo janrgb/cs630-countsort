@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk
-from multiprocessing import cpu_count
-from concurrent.futures import ProcessPoolExecutor
+from tkinter import filedialog
+import multiprocessing
 import random
 import time
 import numpy
@@ -13,6 +13,7 @@ def CountThreadFunc(chunk, max_value):
             local_count[num] += 1
         return local_count
 
+# This code was made possible by Harshita Gupta!
 # This code was made possible by Harshita Gupta!
 def CountSortThreaded(in_list, procs):
     # Step 1: find the maximum value in the array.
@@ -28,16 +29,9 @@ def CountSortThreaded(in_list, procs):
         chunks.append(chunk)
     
     # Step 3: Create a multiprocessing pool and pass arguments.
-    with ProcessPoolExecutor(max_workers=procs) as executor:
-        futures = []
-        partial_counts= []
-
-        # Submit tasks to the pool. The future local_count values will be stored in future.result().
-        for chunk in chunks:
-            futures.append(executor.submit(CountThreadFunc, chunk, max_value))
-
-        for future in futures:
-            partial_counts.append(future.result())
+    with multiprocessing.Pool(processes=procs) as pool:
+        #parallel counting
+        partial_counts = pool.starmap(CountThreadFunc, [(chunk, max_value) for chunk in chunks])
 
     # Step 4: Aggregate the counts from every process.
     total_count = numpy.zeros(max_value + 1, dtype=int)
@@ -77,7 +71,9 @@ def CountSortRegular(in_list):
 
 def identityCheck(arr1, arr2):
     if (arr1 == arr2):
+        print("The arrays are identical!")
         return 0
+    print("The arrays are different!")
     return 1
 
 class CountSort:
@@ -116,7 +112,7 @@ class CountSort:
         maximum_entry.grid(column=1, row=2, sticky=(N,W))
 
         # Calculate max_cores.
-        self.max_cores = cpu_count()
+        self.max_cores = multiprocessing.cpu_count()
 
         # Initial text.
         self.thread_label_init_text = f"# of threads (minimum 1, maximum {self.max_cores}) "
@@ -170,15 +166,15 @@ class CountSort:
         subframe_two.columnconfigure(0, weight=1)
 
         # Define columns for the table.
-        columns = ("Threads", "Elements", "Time (Regular)", "Time (Threaded)")
+        columns = ("Threads", "Elements", "Time (Regular)", "Time (Threaded)", "Timestamp")
 
         # Create Treeview.
-        tree = ttk.Treeview(subframe_two, columns=columns, show="headings")
+        self.tree = ttk.Treeview(subframe_two, columns=columns, show="headings")
 
         # Define headings in column config.
         for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, anchor=CENTER, width=100)
+            self.tree.heading(col, text=col)
+            self.tree.column(col, anchor=CENTER, width=100)
         
         # Add sample data to the table.
         '''data = [
@@ -192,12 +188,12 @@ class CountSort:
             tree.insert("", END, values=row)'''
 
         # Add TreeView widgets to frame
-        tree.grid(row=0, column=0, sticky="nsew")
+        self.tree.grid(row=0, column=0, sticky="nsew")
 
         # Add a vertical scrollbar.
-        v_scroll = ttk.Scrollbar(subframe_two, orient=VERTICAL, command=tree.yview)
+        v_scroll = ttk.Scrollbar(subframe_two, orient=VERTICAL, command=self.tree.yview)
         v_scroll.grid(row=0, column=1, sticky="ns")
-        tree.configure(yscrollcommand=v_scroll.set)
+        self.tree.configure(yscrollcommand=v_scroll.set)
 
         for child in mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
@@ -206,8 +202,10 @@ class CountSort:
             child.grid_configure(padx=5, pady=5)
 
         thread_entry.focus()
-        # root.bind("<Return>", self.calculate)
 
+    def data_entry(self, threads, elements, time_regular, time_threaded):
+        self.tree.insert("", END, values=(threads, elements, time_regular, time_threaded, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+    
     def update_label_empty(self, label):
         # Apply the error style.
         label.config(style="Error.TLabel")
@@ -336,6 +334,54 @@ class CountSort:
         self.text_area.insert(END, content)
         self.text_area['state'] = 'disabled'
 
+    def handle_large_array(self, array1, array2):
+        # Open text_area for writing.
+        self.text_area['state'] = 'normal'
+
+        # Notify the user that the generated/sorted array is too large to display.
+        self.text_area.delete("1.0", END)
+        self.text_area.insert("1.0", "The generated array is too large to display! The program will write it to a file.\n")
+
+        # Insert a 'Download' link.
+        self.text_area.insert(END, "\n\nClick ")
+        start = self.text_area.index(END)
+        self.text_area.insert(END, "here", "hyperlink")
+        self.text_area.insert(END, " to download the file!\n")
+
+        self.text_area['state'] = 'disabled'
+
+        # This function converts the array into a string for the purposes of saving it to a file.
+        def download(text_area):
+            fp = self.save(' '.join(map(str, array1)), ' '.join(map(str, array2)))
+            self.text_area['state'] = 'normal'
+            if fp:
+                self.text_area.insert(END, f"\nFile saved at: {fp}")
+            else:
+                self.text_area.insert(END, f"\nFile save canceled.")
+            self.text_area['state'] = 'disabled'
+
+        self.text_area.tag_add("hyperlink", start, "end-1c")
+        self.text_area.tag_config("hyperlink", foreground="blue", underline=True)
+        self.text_area.tag_bind("hyperlink", "<Button-1>", download)
+
+    def save(self, content1, content2):
+        # User will select a file location and name.
+        fp = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            title="Save Generated Array"
+        )
+        if not fp:
+            return None     # Otherwise they must have canceled it.
+        
+        # Actually write the content.
+        with open(fp, "w") as f:
+            f.write(("=" * 40) + "GENERATED ARRAY" + ("=" * 40) + "\n\n")
+            f.write(content1)
+            f.write("\n\n" + ("=" * 40) + "SORTED ARRAY" + ("=" * 40) + "\n\n")
+            f.write(content2)
+        return fp
+
     def generateList(self):
         # Make an input array based on min and max.
         input_list = []
@@ -372,22 +418,32 @@ class CountSort:
         in_list = self.generateList()
 
         # Write the list to the text_area.
-        self.write_generated(in_list)
+        if self.n_elements < 10000:
+            self.write_generated(in_list)
 
+        # How much time did CountSortRegular take?
         start_time = time.time()
         output1 = CountSortRegular(in_list)
         end_time = time.time()
 
-        self.write_sorted(output1)
+        # Write the sorted list to the text area.
+        if self.n_elements < 10000:
+            self.write_sorted(output1)
+
+        # If the element size is too large for us to display with good performance, we should write it to a file.
+        if self.n_elements >= 10000:
+            self.handle_large_array(in_list, output1)
 
         time_taken_reg = end_time - start_time
 
+        # How much time did CountSortThreaded take?
         start_time = time.time()
         output2 = CountSortThreaded(in_list, self.n_cores)
         end_time = time.time()
 
         time_taken_threaded = end_time - start_time
 
+        # If the arrays are identical, we can add a data entry to our Treeview.
         if (identityCheck(output1, output2) == 0):
             self.data_entry(self.n_cores, self.n_elements, time_taken_reg, time_taken_threaded)
 
