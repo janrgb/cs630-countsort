@@ -11,6 +11,12 @@ class CountSort:
     def __init__(self, root):
         root.title("Counting Sort Program: Threaded vs. Unthreaded")
 
+        # Initializing styles.
+        self.error_style = ttk.Style()
+        self.normal_style = ttk.Style()
+        self.error_style.configure("Error.TLabel", foreground="red")
+        self.normal_style.configure("Normal.TLabel", foreground="black")
+
         # Create a "content frame" or "frame widget".
         mainframe = ttk.Frame(root, padding="10 10 10 10")
         mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
@@ -26,17 +32,35 @@ class CountSort:
         element_entry = ttk.Entry(mainframe, width=10, textvariable=self.number_of_elements)
         element_entry.grid(column=1, row=0, sticky=(N,W))
 
+        self.minimum_bound = StringVar()
+        minimum_entry = ttk.Entry(mainframe, width=10, textvariable=self.minimum_bound)
+        minimum_entry.grid(column=0, row=2, sticky=(N,W))
+
+        self.maximum_bound = StringVar()
+        maximum_entry = ttk.Entry(mainframe, width=10, textvariable=self.maximum_bound)
+        maximum_entry.grid(column=1, row=2, sticky=(N,W))
+
+        # Calculate max_cores.
         self.max_cores = multiprocessing.cpu_count() - 1
 
-        # Variable label.
-        self.thread_label_var = f"# of threads (minimum 1, maximum {self.max_cores}) "
+        # Initial text.
+        self.thread_label_init_text = f"# of threads (minimum 1, maximum {self.max_cores}) "
+        self.element_label_init_text = f"# of elements (minimum 20)"
+        self.minimum_label_init_text = f"minimum bound on elements (minimum 0)"
+        self.maximum_label_init_text = f"maximum bound on elements (must be greater than min)"
 
-        # Create the labels.
-        thread_label = ttk.Label(mainframe, text=self.thread_label_var, wraplength=100)
-        thread_label.grid(column=0, row=1, padx=5, pady=5, sticky=(N))
+        # Create the labels. We make them available in the class for error updating.
+        self.thread_label = ttk.Label(mainframe, text=self.thread_label_init_text, wraplength=100)
+        self.thread_label.grid(column=0, row=1, sticky=(N))
 
-        element_label = ttk.Label(mainframe, text=f"# of elements (minimum 20)", wraplength=100)
-        element_label.grid(column=1, row=1, padx=5, pady=5, sticky=(N,W))
+        self.element_label = ttk.Label(mainframe, text=self.element_label_init_text, wraplength=100)
+        self.element_label.grid(column=1, row=1, sticky=(N))
+
+        self.minimum_label = ttk.Label(mainframe, text=self.minimum_label_init_text, wraplength=100)
+        self.minimum_label.grid(column=0, row=3, sticky=(N))
+
+        self.maximum_label = ttk.Label(mainframe, text=self.maximum_label_init_text, wraplength=100)
+        self.maximum_label.grid(column=1, row=3, sticky=(N))
 
         # Create a button for generating arrays.
         style = ttk.Style()
@@ -44,18 +68,18 @@ class CountSort:
                         font=("Helvetica", 16),
                         padding=(20,20))
         button = ttk.Button(mainframe, text="GENERATE", command=self.generate, style="Custom.TButton")
-        button.grid(column=0, row=2, columnspan=2, sticky=(W, E))
+        button.grid(column=0, row=4, columnspan=2, sticky=(W, E))
 
         # Create a separate frame to house the scrollbar and text area.
         subframe = ttk.Frame(root, padding=10)
-        subframe.grid(row=0, column=2, rowspan=3, sticky=(N,W,E,S))
+        subframe.grid(row=0, column=2, rowspan=4, sticky=(N,W,E,S))
         subframe.rowconfigure(0, weight=1)
         subframe.columnconfigure(0, weight=1)
 
         # Create a text area for storing output.
         text_area = Text(subframe, width=100, height=10, wrap=WORD)
         text_area.grid(row=0, column=0, sticky="nsew")
-        text_area.insert('1.0', 'This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.This is where you will see the generated and sorted array.')
+        text_area.insert('1.0', 'This is where you will see the generated and sorted array.')
         text_area.config(font=('Consolas', 10))
 
         # Create a Scrollbar widget
@@ -66,7 +90,7 @@ class CountSort:
 
         # Create a separate frame for storing table/treeview content.
         subframe_two = ttk.Frame(root, padding=10)
-        subframe_two.grid(row=4, column=0, columnspan=3, sticky=(N,W,E,S))
+        subframe_two.grid(row=5, column=0, columnspan=3, sticky=(N,W,E,S))
         subframe_two.rowconfigure(0, weight=1)
         subframe_two.columnconfigure(0, weight=1)
 
@@ -108,6 +132,121 @@ class CountSort:
 
         thread_entry.focus()
         # root.bind("<Return>", self.calculate)
+
+    def update_label_empty(self, label):
+        # Apply the error style.
+        label.config(style="Error.TLabel")
+        label['text'] = label['text'] + ' [cannot be blank!]'
+    
+    # ERROR CHECKING FUNCTIONS
+    def thread_label_update(self):
+        self.thread_label.config(style="Normal.TLabel")
+        self.thread_label['text'] = self.thread_label_init_text
+        
+        # Check empty?
+        if not self.number_of_threads.get():
+            self.update_label_empty(self.thread_label)
+            return 1
+
+        # Check ValueError?
+        self.n_cores = 0
+        try:
+            self.n_cores = int(self.number_of_threads.get())
+        except ValueError:
+            self.thread_label.config(style="Error.TLabel")
+            self.thread_label['text'] = self.thread_label['text'] + ' [please enter a number!]'
+            return 1
+        
+        # Check Range?
+        if (self.n_cores < 1 or self.n_cores > self.max_cores):
+            self.thread_label.config(style="Error.TLabel")
+            self.thread_label['text'] = self.thread_label['text'] + ' [please enter a valid range!]'
+            return 1
+        
+        return 0
+
+    def elem_label_update(self):
+        self.element_label.config(style="Normal.TLabel")
+        self.element_label['text'] = self.element_label_init_text
+
+        # Check empty?
+        if not self.number_of_elements.get():
+            self.update_label_empty(self.element_label)
+            return 1
+        
+        # Check ValueError?
+        self.n_elements = 0
+        try:
+            self.n_elements = int(self.number_of_elements.get())
+        except ValueError:
+            self.element_label.config(style="Error.TLabel")
+            self.element_label['text'] = self.element_label['text'] + ' [please enter a number!]'
+            return 1
+        
+        # Check Range?
+        if (self.n_elements < 20 or self.n_elements > 10000000):
+            self.element_label.config(style="Error.TLabel")
+            self.element_label['text'] = self.element_label['text'] + ' [please enter a valid range!]'
+            return 1
+        
+        return 0
+
+    def min_label_update(self):
+        self.minimum_label.config(style="Normal.TLabel")
+        self.minimum_label['text'] = self.minimum_label_init_text
+
+        # Check empty?
+        if not self.minimum_bound.get():
+            self.update_label_empty(self.minimum_label)
+            return 1
+        
+        # Check ValueError?
+        self.min = 0
+        try:
+            self.min = int(self.minimum_bound.get())
+        except ValueError:
+            self.minimum_label.config(style="Error.TLabel")
+            self.minimum_label['text'] = self.minimum_label['text'] + ' [please enter a number!]'
+            return 1
+        
+        # Check Range?
+        if (self.min < 0):
+            self.minimum_label.config(style="Error.TLabel")
+            self.minimum_label['text'] = self.minimum_label['text'] + ' [please enter a valid range!]'
+            return 1
+        
+        return 0
+
+    def max_label_update(self):
+        self.maximum_label.config(style="Normal.TLabel")
+        self.maximum_label['text'] = self.maximum_label_init_text
+
+        # Check empty?
+        if not self.maximum_bound.get():
+            self.update_label_empty(self.maximum_label)
+            return 1
+        
+        # Check ValueError?
+        self.max = 0
+        try:
+            self.max = int(self.maximum_bound.get())
+        except ValueError:
+            self.maximum_label.config(style="Error.TLabel")
+            self.maximum_label['text'] = self.maximum_label['text'] + ' [please enter a number!]'
+            return 1
+        
+        # Check Range?
+        if (self.max > 10000000):
+            self.maximum_label.config(style="Error.TLabel")
+            self.maximum_label['text'] = self.maximum_label['text'] + ' [it can\'t be that big!]'
+            return 1
+        
+        if (self.max <= self.min):
+            self.maximum_label.config(style="Error.TLabel")
+            self.maximum_label['text'] = self.maximum_label['text'] + ' [must be bigger than min!]'
+            return 1
+
+        return 0
 
     def CountThreadFunc(self, chunk, max_value):
         local_count = numpy.zeros(max_value + 1, dtype=int)
@@ -176,10 +315,10 @@ class CountSort:
         return 1
 
     def testUserInput(self):
-        # Init local vars.
-        max_cores = multiprocessing.cpu_count() - 1
-
+        # We will defer the actual testing to functions we have cooked up.
+        
         # Ask the user for the number of threads/cores.
+        '''
         no_threads = 0
         while True:
             try:
@@ -192,8 +331,10 @@ class CountSort:
             except ValueError:
                 print("Error! That wasn't a number. Please enter a valid number.")
         print(f"You have chosen {no_threads} threads.")
+        '''
 
         # Ask the user how many elements they would like to generate.
+        '''
         no_elements = 0
         while True:
             try:
@@ -206,8 +347,10 @@ class CountSort:
             except ValueError:
                 print("Error! That wasn't a number. Please enter a valid number.")
         print(f"The program will generate {no_elements} elements.")
+        '''
 
         # Ask the user to put a bounds on the elements.
+        '''
         min = -1
         while True:
             try:
@@ -219,7 +362,7 @@ class CountSort:
                     print("Invalid range. Please enter a number higher than or equal to 0.")
             except ValueError:
                 print("Error! That wasn't a number. Please enter a valid number.")
-
+        '''
         max = -1
         while True:
             try:
@@ -243,14 +386,29 @@ class CountSort:
 
     def generate(self):
         # The first thing we have to do is TEST OUR INPUTS. If our inputs are bad, we SHOULD NOT CONTINUE.
-        if (self.testUserInput()):
-            # TODO: error handling
-            return
+        bad_run = 0
+        if self.thread_label_update():
+            bad_run = 1
+        
+        if self.elem_label_update():
+            bad_run = 1
+        
+        if self.min_label_update():
+            bad_run = 1
+        
+        if self.max_label_update():
+            bad_run = 1
+        
+        if bad_run: return bad_run
+        
+
         
         # Testing what vars we have access to...
-        print(self.number_of_elements.get())
-        print(self.number_of_elements.get())
-        print(self.max_cores)
+        print(f"# of cores chosen: {self.n_cores}")
+        print(f"# of elements needing to be gen'd: {self.n_elements}")
+        print(f"minimum bound: {self.min}")
+        print(f"maximum bound: {self.max}")
+
         # Set the seed.
         random.seed(42)
         # print(random.randint(1, 100))
