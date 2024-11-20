@@ -11,17 +11,18 @@ class CountSort:
     def __init__(self, root):
         root.title("Counting Sort Program: Threaded vs. Unthreaded")
 
-        # Initializing styles.
-        self.error_style = ttk.Style()
-        self.normal_style = ttk.Style()
-        self.error_style.configure("Error.TLabel", foreground="red")
-        self.normal_style.configure("Normal.TLabel", foreground="black")
-
         # Create a "content frame" or "frame widget".
         mainframe = ttk.Frame(root, padding="10 10 10 10")
         mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
         root.columnconfigure(0, weight=1)
         root.rowconfigure(0, weight=1)
+        root.resizable(False, False)
+
+        # Initializing styles.
+        self.error_style = ttk.Style()
+        self.normal_style = ttk.Style()
+        self.error_style.configure("Error.TLabel", foreground="red")
+        self.normal_style.configure("Normal.TLabel", foreground="black")
 
         # Create the entry widgets.
         self.number_of_threads = StringVar()
