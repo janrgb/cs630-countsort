@@ -12,6 +12,6 @@
 
 - Examine the `requirements.txt` file for all dependencies.
 
-- If using Windows or Mac, use `pip install <package>` to get any dependencies you do not have.
+- If using Windows or Mac, use `pip3 install <package>` or `pip install <package>` to get any dependencies you do not have.
 
-- If using Linux, use `sudo apt install python3-<package>` to get any dependencies you do not have.
+- If using Linux, use `sudo apt install python3-<package>` or `sudo apt install python-<package>` to get any dependencies you do not have.
