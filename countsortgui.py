@@ -1,10 +1,79 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import filedialog
 import multiprocessing
 import random
 import time
 import numpy
 import math
+
+def CountThreadFunc(chunk, max_value):
+        local_count = numpy.zeros(max_value + 1, dtype=int)
+        for num in chunk:
+            local_count[num] += 1
+        return local_count
+
+# This code was made possible by Harshita Gupta!
+def CountSortThreaded(in_list, procs):
+    # Step 1: find the maximum value in the array.
+    max_value = max(in_list)
+
+    # Step 2: Split the array into chunks for each process.
+    chunk_size = math.ceil(len(in_list) / procs)            # Round up to let the last process consume any leftovers
+    chunks = []
+    for i in range(procs):
+        start = i * chunk_size
+        end = (i + 1) * chunk_size
+        chunk = in_list[start:end]
+        chunks.append(chunk)
+    
+    # Step 3: Create a multiprocessing pool and pass arguments.
+    with multiprocessing.Pool(processes=procs) as pool:
+        #parallel counting
+        partial_counts = pool.starmap(CountThreadFunc, [(chunk, max_value) for chunk in chunks])
+
+    # Step 4: Aggregate the counts from every process.
+    total_count = numpy.zeros(max_value + 1, dtype=int)
+    for count in partial_counts:
+        total_count += count
+
+    # Step 5: Construct a sorted array from the total counts.
+    sorted_array = []
+    for num, count in enumerate(total_count):
+        sorted_array.extend([num] * count)
+
+    return sorted_array
+
+# This code was made possible by Janhavi Tatkare!
+def CountSortRegular(in_list):
+    # Step 1: find the maximum value in the array.
+    max_val = max(in_list)
+
+    # Step 2: initialize the count array.
+    count_list = [0] * (max_val + 1)
+
+    # Step 3: Count occurrences of each element.
+    for num in in_list:
+        count_list[num] += 1
+
+    # Step 4: Accumulate the counts.
+    for i in range(1, len(count_list)):
+        count_list[i] += count_list[i - 1]
+
+    # Step 5: Place elements into the sorted array.
+    output_list = [0] * len(in_list)
+    for num in reversed(in_list):           # To make it a stable sort, iterate in reverse.
+        output_list[count_list[num] - 1] = num
+        count_list[num] -= 1
+
+    return output_list
+
+def identityCheck(arr1, arr2):
+    if (arr1 == arr2):
+        print("The arrays are identical!")
+        return 0
+    print("The arrays are different!")
+    return 1
 
 class CountSort:
     
@@ -42,7 +111,7 @@ class CountSort:
         maximum_entry.grid(column=1, row=2, sticky=(N,W))
 
         # Calculate max_cores.
-        self.max_cores = multiprocessing.cpu_count() - 1
+        self.max_cores = multiprocessing.cpu_count()
 
         # Initial text.
         self.thread_label_init_text = f"# of threads (minimum 1, maximum {self.max_cores}) "
@@ -78,16 +147,16 @@ class CountSort:
         subframe.columnconfigure(0, weight=1)
 
         # Create a text area for storing output.
-        text_area = Text(subframe, width=100, height=10, wrap=WORD)
-        text_area.grid(row=0, column=0, sticky="nsew")
-        text_area.insert('1.0', 'This is where you will see the generated and sorted array.')
-        text_area.config(font=('Consolas', 10))
+        self.text_area = Text(subframe, width=100, height=10, wrap=WORD)
+        self.text_area.grid(row=0, column=0, sticky="nsew")
+        self.text_area.insert('1.0', 'This is where you will see the generated and sorted array.')
+        self.text_area.config(font=('Consolas', 10))
 
         # Create a Scrollbar widget
-        scrollbar = Scrollbar(subframe, orient=VERTICAL, command=text_area.yview)
+        scrollbar = Scrollbar(subframe, orient=VERTICAL, command=self.text_area.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
-        text_area.config(yscrollcommand=scrollbar.set)
-        text_area['state'] = 'disabled'
+        self.text_area.config(yscrollcommand=scrollbar.set)
+        self.text_area['state'] = 'disabled'
 
         # Create a separate frame for storing table/treeview content.
         subframe_two = ttk.Frame(root, padding=10)
@@ -96,15 +165,15 @@ class CountSort:
         subframe_two.columnconfigure(0, weight=1)
 
         # Define columns for the table.
-        columns = ("Threads", "Elements", "Time (Regular)", "Time (Threaded)")
+        columns = ("Threads", "Elements", "Time (Regular)", "Time (Threaded)", "Timestamp")
 
         # Create Treeview.
-        tree = ttk.Treeview(subframe_two, columns=columns, show="headings")
+        self.tree = ttk.Treeview(subframe_two, columns=columns, show="headings")
 
         # Define headings in column config.
         for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, anchor=CENTER, width=100)
+            self.tree.heading(col, text=col)
+            self.tree.column(col, anchor=CENTER, width=100)
         
         # Add sample data to the table.
         '''data = [
@@ -118,12 +187,12 @@ class CountSort:
             tree.insert("", END, values=row)'''
 
         # Add TreeView widgets to frame
-        tree.grid(row=0, column=0, sticky="nsew")
+        self.tree.grid(row=0, column=0, sticky="nsew")
 
         # Add a vertical scrollbar.
-        v_scroll = ttk.Scrollbar(subframe_two, orient=VERTICAL, command=tree.yview)
+        v_scroll = ttk.Scrollbar(subframe_two, orient=VERTICAL, command=self.tree.yview)
         v_scroll.grid(row=0, column=1, sticky="ns")
-        tree.configure(yscrollcommand=v_scroll.set)
+        self.tree.configure(yscrollcommand=v_scroll.set)
 
         for child in mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5)
@@ -132,8 +201,10 @@ class CountSort:
             child.grid_configure(padx=5, pady=5)
 
         thread_entry.focus()
-        # root.bind("<Return>", self.calculate)
 
+    def data_entry(self, threads, elements, time_regular, time_threaded):
+        self.tree.insert("", END, values=(threads, elements, time_regular, time_threaded, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+    
     def update_label_empty(self, label):
         # Apply the error style.
         label.config(style="Error.TLabel")
@@ -248,142 +319,76 @@ class CountSort:
             return 1
 
         return 0
+    
+    def write_generated(self, content):
+        self.text_area['state'] = 'normal'
+        self.text_area.delete("1.0", END)
+        self.text_area.insert(END, ("=" * 40) + "GENERATED ARRAY" + ("=" * 40) + "\n\n")
+        self.text_area.insert(END, content)
+        self.text_area['state'] = 'disabled'
 
-    def CountThreadFunc(self, chunk, max_value):
-        local_count = numpy.zeros(max_value + 1, dtype=int)
-        for num in chunk:
-            local_count[num] += 1
-        return local_count
+    def write_sorted(self, content):
+        self.text_area['state'] = 'normal'
+        self.text_area.insert(END, "\n\n" + ("=" * 40) + "SORTED ARRAY" + ("=" * 40) + "\n\n")
+        self.text_area.insert(END, content)
+        self.text_area['state'] = 'disabled'
 
-    # This code was made possible by Harshita Gupta!
-    def CountSortThreaded(self, in_list, procs):
-        # Step 1: find the maximum value in the array.
-        max_value = max(in_list)
+    def handle_large_array(self, array1, array2):
+        # Open text_area for writing.
+        self.text_area['state'] = 'normal'
 
-        # Step 2: Split the array into chunks for each process.
-        chunk_size = math.ceil(len(in_list) // procs)            # Round up to let the last process consume any leftovers
-        chunks = []
-        for i in range(procs):
-            start = i * chunk_size
-            end = (i + 1) * chunk_size
-            chunk = in_list[start:end]
-            chunks.append(chunk)
+        # Notify the user that the generated/sorted array is too large to display.
+        self.text_area.delete("1.0", END)
+        self.text_area.insert("1.0", "The generated array is too large to display! The program will write it to a file.\n")
+
+        # Insert a 'Download' link.
+        self.text_area.insert(END, "\n\nClick ")
+        start = self.text_area.index(END)
+        self.text_area.insert(END, "here", "hyperlink")
+        self.text_area.insert(END, " to download the file!\n")
+
+        self.text_area['state'] = 'disabled'
+
+        # This function converts the array into a string for the purposes of saving it to a file.
+        def download(text_area):
+            fp = self.save(' '.join(map(str, array1)), ' '.join(map(str, array2)))
+            self.text_area['state'] = 'normal'
+            if fp:
+                self.text_area.insert(END, f"\nFile saved at: {fp}")
+            else:
+                self.text_area.insert(END, f"\nFile save canceled.")
+            self.text_area['state'] = 'disabled'
+
+        self.text_area.tag_add("hyperlink", start, "end-1c")
+        self.text_area.tag_config("hyperlink", foreground="blue", underline=True)
+        self.text_area.tag_bind("hyperlink", "<Button-1>", download)
+
+    def save(self, content1, content2):
+        # User will select a file location and name.
+        fp = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            title="Save Generated Array"
+        )
+        if not fp:
+            return None     # Otherwise they must have canceled it.
         
-        # Step 3: Create a multiprocessing pool and pass arguments.
-        with multiprocessing.Pool(processes=procs) as pool:
-            #parallel counting
-            partial_counts = pool.starmap(self.CountThreadFunc, [(chunk, max_value) for chunk in chunks])
+        # Actually write the content.
+        with open(fp, "w") as f:
+            f.write(("=" * 40) + "GENERATED ARRAY" + ("=" * 40) + "\n\n")
+            f.write(content1)
+            f.write("\n\n" + ("=" * 40) + "SORTED ARRAY" + ("=" * 40) + "\n\n")
+            f.write(content2)
+        return fp
 
-        # Step 4: Aggregate the counts from every process.
-        total_count = numpy.zeros(max_value + 1, dtype=int)
-        for count in partial_counts:
-            total_count += count
-
-        # Step 5: Construct a sorted array from the total counts.
-        sorted_array = []
-        for num, count in enumerate(total_count):
-            sorted_array.extend([num] * count)
-
-        return sorted_array
-
-    # This code was made possible by Janhavi Tatkare!
-    def CountSortRegular(self, in_list):
-        # Step 1: find the maximum value in the array.
-        max_val = max(in_list)
-
-        # Step 2: initialize the count array.
-        count_list = [0] * (max_val + 1)
-
-        # Step 3: Count occurrences of each element.
-        for num in in_list:
-            count_list[num] += 1
-
-        # Step 4: Accumulate the counts.
-        for i in range(1, len(count_list)):
-            count_list[i] += count_list[i - 1]
-
-        # Step 5: Place elements into the sorted array.
-        output_list = [0] * len(in_list)
-        for num in reversed(in_list):           # To make it a stable sort, iterate in reverse.
-            output_list[count_list[num] - 1] = num
-            count_list[num] -= 1
-
-        return output_list
-
-    def identityCheck(self, arr1, arr2):
-        if (arr1 == arr2):
-            return 0
-        return 1
-
-    def testUserInput(self):
-        # We will defer the actual testing to functions we have cooked up.
-        
-        # Ask the user for the number of threads/cores.
-        '''
-        no_threads = 0
-        while True:
-            try:
-                no_threads = int(
-                    input(f"Hey user! Enter the number of threads you would like to use between 1 and {max_cores}: "))
-                if 1 <= no_threads <= max_cores:
-                    break
-                else:
-                    print(f"Invalid range. Please enter a number between 1 and {max_cores}.")
-            except ValueError:
-                print("Error! That wasn't a number. Please enter a valid number.")
-        print(f"You have chosen {no_threads} threads.")
-        '''
-
-        # Ask the user how many elements they would like to generate.
-        '''
-        no_elements = 0
-        while True:
-            try:
-                no_elements = int(
-                    input("How many elements would you like to generate? Minimum 20: "))
-                if no_elements >= 20:
-                    break
-                else:
-                    print("Invalid range. Please enter a number higher than or equal to 20.")
-            except ValueError:
-                print("Error! That wasn't a number. Please enter a valid number.")
-        print(f"The program will generate {no_elements} elements.")
-        '''
-
-        # Ask the user to put a bounds on the elements.
-        '''
-        min = -1
-        while True:
-            try:
-                min = int(
-                    input(f"What should be the minimum value in this array? It must be at LEAST 0: "))
-                if min >= 0:
-                    break
-                else:
-                    print("Invalid range. Please enter a number higher than or equal to 0.")
-            except ValueError:
-                print("Error! That wasn't a number. Please enter a valid number.")
-        '''
-        max = -1
-        while True:
-            try:
-                max = int(
-                    input(f"What should be the maximum value in this array? It must be at LEAST {min + 1}: "))
-                if max >= min + 1:
-                    break
-                else:
-                    print(f"Invalid range. Please enter a number higher than or equal to {min + 1}.")
-            except ValueError:
-                print("Error! That wasn't a number. Please enter a valid number.")
-        print(f"The program will generate {no_elements} elements between {min} and {max}, inclusive.")
-
+    def generateList(self):
         # Make an input array based on min and max.
         input_list = []
 
-        for _ in range(0, no_elements, 1):
-            input_list.append((random.randrange(min, max + 1)))
+        for _ in range(0, self.n_elements, 1):
+            input_list.append((random.randrange(self.min, self.max + 1)))
 
-        return input_list, no_threads
+        return input_list
 
     def generate(self):
         # The first thing we have to do is TEST OUR INPUTS. If our inputs are bad, we SHOULD NOT CONTINUE.
@@ -402,70 +407,49 @@ class CountSort:
         
         if bad_run: return bad_run
         
-
-        
         # Testing what vars we have access to...
         print(f"# of cores chosen: {self.n_cores}")
         print(f"# of elements needing to be gen'd: {self.n_elements}")
         print(f"minimum bound: {self.min}")
         print(f"maximum bound: {self.max}")
 
-        # Set the seed.
-        random.seed(42)
-        # print(random.randint(1, 100))
+        # Generate the list to sort.
+        in_list = self.generateList()
 
-        # Introduction.
-        '''
-        print("Welcome to the Regular VS. Parallel Counting Sort Program!")
-        print("Enter exit to quit the program or press enter")
-        exit_input=input("Do you want to quit or continue?").strip()
-        if exit_input.lower()=="exit":
-            print("Thanks for coming!\n")
-            break
+        # Write the list to the text_area.
+        if self.n_elements < 10000:
+            self.write_generated(in_list)
 
-        # Get user input.
-        list_and_threads = self.getUserInput()
-        returned_list = list_and_threads[0]
-        num_threads = list_and_threads[1]
-
-        if len (returned_list) == 0:
-            print("Empty array, nothing to sort.")
-            print("\nRUNNING AGAIN...\n")
-            continue
-        '''
-
-        '''
+        # How much time did CountSortRegular take?
         start_time = time.time()
-        output1 = self.CountSortRegular(returned_list)
+        output1 = CountSortRegular(in_list)
         end_time = time.time()
 
-        print("\n==========REGULAR COUNTSORT==========\n")
+        # Write the sorted list to the text area.
+        if self.n_elements < 10000:
+            self.write_sorted(output1)
 
-        # print("ORIGINAL ARRAY: ", returned_list)
-        # print("SORTED ARRAY: ", output)
-        print(f"Time taken for regular countsort: {(end_time - start_time)}")
+        # If the element size is too large for us to display with good performance, we should write it to a file.
+        if self.n_elements >= 10000:
+            self.handle_large_array(in_list, output1)
 
-        print("\n==========THREADED COUNTSORT==========\n")
-        '''
+        time_taken_reg = end_time - start_time
 
-        # Build thread arguments and call threads.
-        '''
+        # How much time did CountSortThreaded take?
         start_time = time.time()
-        output2 = self.CountSortThreaded(returned_list, num_threads)
+        output2 = CountSortThreaded(in_list, self.n_cores)
         end_time = time.time()
-        print("ORIGINAL ARRAY: ", returned_list)
-        print("SORTED ARRAY: ", output)
-        print(f"Time taken for threaded countsort: {(end_time - start_time)}")
 
-        if (self.identityCheck(output1, output2) == 0):
-            print("The arrays are identical!")
-        else:
-            print("ERROR! The arrays are not identical! Something's wrong!")
+        time_taken_threaded = end_time - start_time
 
-        print("\nRUNNING AGAIN...\n")
-        '''
+        # If the arrays are identical, we can add a data entry to our Treeview.
+        if (identityCheck(output1, output2) == 0):
+            self.data_entry(self.n_cores, self.n_elements, time_taken_reg, time_taken_threaded)
+
+        # print("\nRUNNING AGAIN...\n")
 
 # Set up the window.
-root = Tk()
-CountSort(root)
-root.mainloop()
+if __name__ == '__main__':
+    root = Tk()
+    CountSort(root)
+    root.mainloop()
