@@ -12,6 +12,6 @@
 
 - Examine the `requirements.txt` file for all dependencies.
 
-- If using Windows or Mac, use `pip install tk` to get tkinter and `pip install numpy` to get numpy (on command line).
+- If using Windows or Mac, use `pip install <package>` to get any dependencies you do not have.
 
-- If using Linux, use `sudo apt install tk` to get tkinter and `sudo apt install numpy` to get numpy (on command line).
+- If using Linux, use `sudo apt install python3-<package>` to get any dependencies you do not have.
