@@ -14,7 +14,6 @@ def CountThreadFunc(chunk, max_value):
         return local_count
 
 # This code was made possible by Harshita Gupta!
-# This code was made possible by Harshita Gupta!
 def CountSortThreaded(in_list, procs):
     # Step 1: find the maximum value in the array.
     max_value = max(in_list)
