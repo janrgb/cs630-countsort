@@ -18,4 +18,4 @@
 
 ## Running
 
-- Once every dependency is met, running the program is as easy as doing `python countsortgui.py`.
+- Once every dependency is met, running the program is as easy as doing `python countsortgui.py` in the directory where `countsortgui.py` is located.
