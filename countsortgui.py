@@ -70,13 +70,12 @@ def CountSortRegular(in_list):
 
 def identityCheck(arr1, arr2):
     if (arr1 == arr2):
-        print("The arrays are identical!")
         return 0
-    print("The arrays are different!")
     return 1
 
 class CountSort:
     
+    # This code was made possible by Janish Suneja!
     def __init__(self, root):
         root.title("Counting Sort Program: Threaded vs. Unthreaded")
 
@@ -115,7 +114,7 @@ class CountSort:
 
         # Initial text.
         self.thread_label_init_text = f"# of threads (minimum 1, maximum {self.max_cores}) "
-        self.element_label_init_text = f"# of elements (minimum 20)"
+        self.element_label_init_text = f"# of elements (minimum 20) (maximum 10M)"
         self.minimum_label_init_text = f"minimum bound on elements (minimum 0)"
         self.maximum_label_init_text = f"maximum bound on elements (must be greater than min)"
 
@@ -174,17 +173,6 @@ class CountSort:
         for col in columns:
             self.tree.heading(col, text=col)
             self.tree.column(col, anchor=CENTER, width=100)
-        
-        # Add sample data to the table.
-        '''data = [
-            (1, "Alice", 30, "HR")
-        ] * 10
-
-        for _ in range(10):
-            data.append((2, "Bran", 40, "Corp"))
-        
-        for row in data:
-            tree.insert("", END, values=row)'''
 
         # Add TreeView widgets to frame
         self.tree.grid(row=0, column=0, sticky="nsew")
@@ -384,7 +372,6 @@ class CountSort:
     def generateList(self):
         # Make an input array based on min and max.
         input_list = []
-
         for _ in range(0, self.n_elements, 1):
             input_list.append((random.randrange(self.min, self.max + 1)))
 
@@ -406,12 +393,6 @@ class CountSort:
             bad_run = 1
         
         if bad_run: return bad_run
-        
-        # Testing what vars we have access to...
-        print(f"# of cores chosen: {self.n_cores}")
-        print(f"# of elements needing to be gen'd: {self.n_elements}")
-        print(f"minimum bound: {self.min}")
-        print(f"maximum bound: {self.max}")
 
         # Generate the list to sort.
         in_list = self.generateList()
@@ -445,8 +426,6 @@ class CountSort:
         # If the arrays are identical, we can add a data entry to our Treeview.
         if (identityCheck(output1, output2) == 0):
             self.data_entry(self.n_cores, self.n_elements, time_taken_reg, time_taken_threaded)
-
-        # print("\nRUNNING AGAIN...\n")
 
 # Set up the window.
 if __name__ == '__main__':

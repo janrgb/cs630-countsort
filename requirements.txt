@@ -1,0 +1,6 @@
+numpy
+tk
+multiprocessing
+random
+time
+math
