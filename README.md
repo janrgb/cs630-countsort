@@ -15,3 +15,7 @@
 - If using Windows or Mac, use `pip3 install <package>` or `pip install <package>` to get any dependencies you do not have.
 
 - If using Linux, use `sudo apt install python3-<package>` or `sudo apt install python-<package>` to get any dependencies you do not have.
+
+## Running
+
+- Once every dependency is met, running the program is as easy as doing `python countsortgui.py`.
